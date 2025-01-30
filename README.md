@@ -1,4 +1,3 @@
-Here's a **`README.md`** template for your Laravel backend repository:  
 
 ---
 
