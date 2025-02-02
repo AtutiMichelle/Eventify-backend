@@ -3,18 +3,30 @@
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Route;
 use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
-use App\Http\Controllers\EventController;
+use App\Http\Controllers\EventRegistrationController;
+use Laravel\Sanctum\PersonalAccessToken;
 
-Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
-    return $request->user();
+
+Route::get('/user', function (Request $request) {
+    $token = $request->bearerToken();
+    $personalAccessToken = PersonalAccessToken::findToken($token);
+
+    if (!$personalAccessToken) {
+        return response()->json(['error' => 'Invalid token'], 401);
+    }
+
+    $user = $personalAccessToken->tokenable; // Get user from token
+    return response()->json(['user' => $user]);
+   
 });
 
-Route::middleware([EnsureFrontendRequestsAreStateful::class, 'auth:sanctum'])->get('/user', function (Request $request) {
-    return $request->user();
-});
+// Route::get('/user', function (Request $request) {
+//     return response()->json($request->user());
+// });
 
 Route::post('/login', function (Request $request) {
     $user = User::where('name', $request->name)->first();
@@ -23,7 +35,7 @@ Route::post('/login', function (Request $request) {
         return response()->json(['message' => 'Invalid credentials'], 401);
     }
 
-    return response()->json(['token' => $user->createToken('YourAppName')->plainTextToken]);
+    return response()->json(['token' => $user->createToken('Eventify')->plainTextToken]);
 });
 
 Route::post('/register', function(Request $request){
@@ -52,5 +64,7 @@ Route::options('/{any}', function () {
         ->header('Access-Control-Allow-Credentials', 'true');
 })->where('any', '.*');
 
-Route::post('/register-event', [EventController::class , 'register']);
-Route::post('/registered-events', [EventController::class, 'getRegisteredEvents']);
+Route::post('/register-event', [EventRegistrationController::class, 'register']);
+Route::get('/user-registrations/{userId}', [EventRegistrationController::class, 'getUserRegistrations']);
+
+ 
